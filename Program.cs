@@ -1,49 +1,48 @@
-﻿namespace GeneralDijkstra;
+﻿namespace Dijkstra;
 
 using System;
 using System.Collections.Generic;
 
 /*
- * A program to demonstrate the usage of delegate functions to create a general Dijkstra's algorithm
- * depending on which functions we use ((+,min) to find shortest path or (min,max) to find path
- * with largest capacity)
- * 
- * INPUT: Two numbers, n - number of vertices, m - number of edges
- *      following m entries are 3 numbers each representing an edge: output vertex, input vertex and weigh
- *      
- * OUTPUT: The result of the General Dijkstra algorithm
- * 
- * EXAMPLE INPUT:
- * 6 7
- * 0 2 3
- * 0 1 2
- * 2 4 1
- * 1 4 3
- * 4 5 1
- * 3 5 4
- * 
- * EXAMPLE SETTINGS: ObecnyDijkstra(0, Secti, Min, graf); cilovyVrchol = 5
- * 
- * EXAMPLE OUTPUT:
- * Path total value 5
- * Path: 5 -> 4 -> 2 -> 0
- */
+* A program to demonstrate the usage of delegate functions to create a general Dijkstra's algorithm
+* depending on which functions we use ((+,min) to find shortest path or (min,max) to find path
+* with largest capacity)
+* 
+* INPUT: Two numbers, n - number of vertices, m - number of edges
+*      following m entries are 3 numbers each representing an edge: output vertex, input vertex and weigh
+*      
+* OUTPUT: The result of the General Dijkstra algorithm
+* 
+* EXAMPLE INPUT:
+* 6 7
+* 0 2 3
+* 0 1 2
+* 2 4 1
+* 1 4 3
+* 4 5 1
+* 3 5 4
+* 
+* EXAMPLE SETTINGS: ObecnyDijkstra(0, Secti, Min, graf); cilovyVrchol = 5
+* 
+* EXAMPLE OUTPUT:
+* Path total value 5
+* Path: 5 -> 4 -> 2 -> 0
+*/
+
+public delegate int PorovnavaciFce(int x, int y); // porovnavaci funkce, ktera je vyuzita jak pro dijkstru, tak i pro haldu
 
 class Program
 {
     static void Main(string[] args)
     {
-        OhodnocenyGraf grafik = CteckaOhodnocenychGrafu.NactiVstupDoGrafuAVrat();
-        //PisarkaOhodnocenychGrafu.VypisGraf(grafik);
+        OhodnocenyGraf graf = TUI.ZeptejSeAVratGraf();
 
-        int pocatecniHodnota = 0;
-        ObecnyDijksta dijkstra = new ObecnyDijksta(pocatecniHodnota, Secti, Min, grafik);
-        dijkstra.SpocitejNejkratsiCestu(0);
+        int pocatecniVrchol = TUI.ZeptejSeAVratIndexPocatecnihoVrcholu();
+        int cilovyVrchol = TUI.ZeptejSeAVratIndexCilovehoVrcholu();
 
-        int cilovyVrchol = 5;
-        int nejkratsi = dijkstra.VratDelkuSpocitaneCesty(cilovyVrchol);
-        Console.WriteLine($"Path total value {nejkratsi}");
-        dijkstra.VypisSpocitanouCestu(cilovyVrchol);
+        int volba = TUI.ZeptejSeAVratVolbuHledani();
+
+        TUI.VypisNalezenouCestu(graf, volba, pocatecniVrchol, cilovyVrchol);
 
     }
 
@@ -65,7 +64,7 @@ class Program
     }
 }
 
-class CteckaOhodnocenychGrafu
+class Ctecka
 {
 
     private static int Posledni;
@@ -84,7 +83,7 @@ class CteckaOhodnocenychGrafu
 
     }
 
-    private static int PrectiInt()
+    public static int PrectiInt()
     {
         int x = 0;
         int predchozi = 0;
@@ -108,6 +107,94 @@ class CteckaOhodnocenychGrafu
         return x;
     }
 
+}
+
+class PisarkaGrafu
+{
+
+    /*
+     * Vypise graf, kde vrcholy jsou psany ve formatu cislo:vaha_hrany_do_nej
+     */
+    public static void VypisGraf(OhodnocenyGraf graf)
+    {
+        for (int i = 0; i < graf.VratPocetVrcholu(); i++)
+        {
+            Console.Write($"Vrchol {i} ->");
+            foreach (Tuple<int, int> prvek in graf.VratSeznamSouseduVrcholu(i))
+            {
+                Console.Write($" {prvek.Item1}:{prvek.Item2}");
+            }
+            Console.WriteLine();
+        }
+    }
+}
+
+class TUI
+{
+    public static OhodnocenyGraf ZeptejSeAVratGraf()
+    {
+        Console.WriteLine("Prosim zadej graf ve formatu danem v komentari u zdrojoveho kodu:");
+        return Ctecka.NactiVstupDoGrafuAVrat();
+    }
+
+    public static int ZeptejSeAVratIndexPocatecnihoVrcholu()
+    {
+        Console.Write("Zadej index vrcholu, ze ktereho provedeme prohledavani: ");
+        return Ctecka.PrectiInt();
+    }
+    
+    public static int ZeptejSeAVratIndexCilovehoVrcholu()
+    {
+        Console.Write("Zadej index ciloveho vrcholu, do ktereho chceme najit cestu: ");
+        return Ctecka.PrectiInt();
+    }
+    
+    public static int ZeptejSeAVratVolbuHledani()
+    {
+        Console.Write("Chces hledat nejkratsi cestu (1) nebo nejvetsi kapacitu (2)? : ");
+        int volba = Ctecka.PrectiInt();
+        if (volba < 1 || volba > 2 )
+        {
+            Console.WriteLine("Teto volbe nerozumim, tak budu predpokladat, ze chces hledat nejkratsi cestu");
+            volba = 1;
+        }
+        return volba;
+        
+
+    }
+
+    public static void VypisNalezenouCestu(OhodnocenyGraf graf, int volba, int pocatecniVrchol, int cilovyVrchol)
+    {
+        ObecnyDijkstra dijkstra;
+        if (volba == 1)
+        {
+            int pocatecniHodnota = 0;
+            dijkstra = new ObecnyDijkstra(pocatecniHodnota, Program.Secti, Program.Min, graf);
+        }
+        else
+        {
+            int pocatecniHodnota = Int32.MaxValue;
+            dijkstra = new ObecnyDijkstra(pocatecniHodnota, Program.Min, Program.Max, graf);
+        }
+
+        dijkstra.SpocitejNejkratsiCestu(pocatecniVrchol);
+        int hodnotaCesty = dijkstra.VratDelkuSpocitaneCesty(cilovyVrchol);
+
+        Console.WriteLine();
+        Console.WriteLine("VYSLEDEK:");
+        Console.WriteLine("------------------------------");
+
+        if (volba == 1)
+        {
+            Console.WriteLine($"Nejkratsi cesta ma delku {hodnotaCesty}");
+        }
+        else
+        {
+            Console.WriteLine($"Cesta s nejvetsi kapacitou ma kapacitu {hodnotaCesty}");
+        }
+
+        dijkstra.VypisSpocitanouCestu(cilovyVrchol);
+    }
 }
 
 class OhodnocenyGraf
@@ -144,28 +231,6 @@ class OhodnocenyGraf
 
 
 }
-
-class PisarkaOhodnocenychGrafu
-{
-
-    /*
-     * Vypise graf, kde vrcholy jsou psany ve formatu cislo:vaha_hrany_do_nej
-     */
-    public static void VypisGraf(OhodnocenyGraf graf)
-    {
-        for (int i = 0; i < graf.VratPocetVrcholu(); i++)
-        {
-            Console.Write($"Vrchol {i} ->");
-            foreach (Tuple<int, int> prvek in graf.VratSeznamSouseduVrcholu(i))
-            {
-                Console.Write($" {prvek.Item1}:{prvek.Item2}");
-            }
-            Console.WriteLine();
-        }
-    }
-}
-
-public delegate int PorovnavaciFce(int x, int y); // porovnavaci funkce, ktera je vyuzita jak pro dijkstru, tak i pro haldu
 
 class Halda
 {
@@ -346,7 +411,7 @@ class Halda
     }
 }
 
-class ObecnyDijksta
+class ObecnyDijkstra
 {
 
     public delegate int AditivniFce(int x, int y);
@@ -361,7 +426,7 @@ class ObecnyDijksta
     private int[] nejkratsiVzdalenosti;
     private int pocatecniHodnota;
 
-    public ObecnyDijksta(int pocatecniHodnota, AditivniFce aditivni, PorovnavaciFce porovnavaci, OhodnocenyGraf graf)
+    public ObecnyDijkstra(int pocatecniHodnota, AditivniFce aditivni, PorovnavaciFce porovnavaci, OhodnocenyGraf graf)
     {
         this.pocatecniHodnota = pocatecniHodnota;
         this.aditivni = aditivni;
